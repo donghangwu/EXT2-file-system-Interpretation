@@ -9,6 +9,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <time.h>
+#include <sys/stat.h>
 #include "ext2_fs.h"
 
 #define SUPPER_BLOCK_OFFSET 1024
@@ -101,7 +102,7 @@ void free_block_entries()
     free(blocks);
 
 }
-
+void Inode_summary(unsigned int nodes_num);
 void free_Inode_entry()
 {
     char *inodes=malloc(block_size);
@@ -112,18 +113,71 @@ void free_Inode_entry()
     {
         for(int j=0;j<8;j++)
         {
-            if((inodes[i] & (1 << j))==0)
+            if((inodes[i] & (1 << j))==0)//nodes not being used
             {
                 printf("IFREE,%d\n",i*8+j+1);//from TA's slides
+            }
+            else//nodes being used
+            {
+                Inode_summary(i*8+j+1);
+                
             }
         }
     }
 
-    free(blocks);
+    free(inodes);
 }
 
-void Inode_summary()
+void gmtfunc(char*ret,time_t raw)
 {
+    struct tm mytime=*gmtime(&raw);
+    //reference: https://www.epochconverter.com/programming/c
+    strftime(ret, 60, "%m/%d/%y %H:%M:%S", &mytime);
+
+     
+}
+
+void Inode_summary(unsigned int nodes_num)
+{
+    struct ext2_inode node;
+    pread(image_fd,&node,sizeof(node),block_size*inode_table+(nodes_num-1)*sizeof(node));
+
+    if(node.i_mode==0 || node.i_links_count==0)
+        return;
+    char file_type='?';
+    if(S_ISDIR(node.i_mode))
+    {
+        file_type='d';//directory
+    }
+    if(S_ISREG(node.i_mode))
+    {
+        file_type='f';//regular file
+    }
+
+    if(S_ISLNK(node.i_mode))
+    {
+        file_type='s';//symbolic link
+    }
+
+    printf("INODE,%d,%c,%o,%d,%d,%d",nodes_num,file_type,node.i_mode& 0xFFF,
+                                     node.i_uid,node.i_gid,node.i_links_count);
+
+
+    char ctime[60];
+    gmtfunc(ctime,node.i_ctime);
+    char mtime[60];
+    gmtfunc(mtime,node.i_mtime);
+    char atime[60];
+    gmtfunc(atime,node.i_atime);
+    //print fime
+    printf(",%s,%s,%s\n",ctime,mtime,atime);
+
+    for(int i=0;i<12;i++)
+    {
+
+    }   
+
+
 
 }
 
@@ -167,6 +221,8 @@ int main(int argc, char** argv)
 
     free_block_entries();
 
+
+    //this function should call Inode_summary()
     free_Inode_entry();
 
     exit(0);
