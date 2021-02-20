@@ -109,7 +109,7 @@ void free_Inode_entry()
 
     pread(image_fd, inodes, block_size, block_size*inode_bitmap);
 
-    for(unsigned int i=0;i<block_size/8;i++)
+    for(unsigned int i=0;i<inodes_per_group/8;i++)
     {
         for(int j=0;j<8;j++)
         {
@@ -172,13 +172,19 @@ void Inode_summary(unsigned int nodes_num)
     //print fime
     printf(",%s,%s,%s\n",ctime,mtime,atime);
 
-    for(int i=0;i<12;i++)
+    //node.i_block[0-11] directory entries
+    for(int i=0;i<11;i++)
     {
-
+        directory_entries();
     }   
 
 
-
+    //node.i_block[12] single indirect block
+    indirect_block();
+    //node.i_block[13] double indirect block
+    indirect_block();
+    //node.i_block[14] triple indirect block
+    indirect_block();
 }
 
 void directory_entries()
