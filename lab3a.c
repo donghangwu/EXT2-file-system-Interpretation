@@ -133,7 +133,7 @@ void gmtfunc(char *ret, time_t raw)
 }
 
 void directory_entries(unsigned long i_block, unsigned int parent);
-void dfs_indirect_block(int levels, unsigned int i_block, unsigned int call_node_num, char file_type);
+void indirect_block(int levels, unsigned int i_block, unsigned int call_node_num, int offset);
 void Inode_summary(unsigned int nodes_num)
 {
     struct ext2_inode node;
@@ -170,7 +170,7 @@ void Inode_summary(unsigned int nodes_num)
     // print file size and num of blocks
     printf(",%d,%d", node.i_size, node.i_blocks);
 
-    if (node.i_size > 60)
+    if ((node.i_size > 60 && file_type == 's') || file_type != 's')
     {
         for (int i = 0; i < 15; i++)
         {
@@ -179,26 +179,25 @@ void Inode_summary(unsigned int nodes_num)
     }
     printf("\n");
     //node.i_block[0-11] directory entries
-
     for (int i = 0; i < 12; i++)
     {
         if (file_type == 'd' && node.i_block[i] != 0)
-            directory_entries(node.i_block[i], nodes_num); // create directory entries
+            directory_entries(node.i_block[i], nodes_num);
     }
-
+    // Offset from Doc: http://www.nongnu.org/ext2-doc/ext2.html
     //node.i_block[12] single indirect block
     if (node.i_block[12] != 0)
     {
-        dfs_indirect_block(1, node.i_block[12], nodes_num, file_type);
+        indirect_block(1, node.i_block[12], nodes_num, 12);
     }
     //node.i_block[13] double indirect block
     if (node.i_block[13] != 0)
     {
-        // dfs_indirect_block(2, node.i_block[13], nodes_num);
+        indirect_block(2, node.i_block[13], nodes_num, 256 + 12);
     }
-    if (node.i_block[13] != 0)
+    if (node.i_block[14] != 0)
     {
-        // dfs_indirect_block(2, node.i_block[14], nodes_num);
+        indirect_block(3, node.i_block[14], nodes_num, 65536 + 256 + 12);
     }
 }
 
@@ -212,41 +211,33 @@ void directory_entries(unsigned long i_block, unsigned int parent)
     {
         char file_name[EXT2_NAME_LEN + 1];
         pread(image_fd, entry, sizeof(struct ext2_dir_entry), dir_base + offset);
-        memcpy(file_name, entry->name, entry->name_len);
-        printf("DIRENT,%d,%d,%d,%d,%d,%s\n", parent, offset, entry->inode, entry->rec_len, entry->name_len, entry->name);
+        if (entry->inode)
+        {
+            memcpy(file_name, entry->name, entry->name_len);
+            printf("DIRENT,%d,%d,%d,%d,%d,'%s'\n", parent, offset, entry->inode, entry->rec_len, entry->name_len, entry->name);
+        }
         offset += entry->rec_len;
     }
     free(entry);
 }
 
-void dfs_indirect_block(int levels, unsigned int i_block, unsigned int call_node_num, char file_type)
+void indirect_block(int levels, unsigned int i_block, unsigned int call_node_num, int offset)
 {
     unsigned long block_base = SUPPER_BLOCK_OFFSET + (i_block - 1) * block_size;
-    uint32_t *block_ptrs = malloc(block_size);
-    pread(image_fd, block_ptrs, block_size, block_base);
-
-    if (levels == 0)
+    __u32 *pointees = malloc(block_size);
+    pread(image_fd, pointees, block_size, block_base);
+    for (unsigned int i = 0; i < block_size / sizeof(__u32); i++)
     {
-        return;
-    }
-    else
-    {
-        for (unsigned int i = 0; i < block_size / sizeof(uint32_t); i++)
+        if (pointees[i] != 0)
         {
-            if (levels == 1)
-            {
-                if (block_ptrs[i] != 0)
-                {
-                    if (file_type == 'd')
-                    {
-                        directory_entries(block_ptrs[i], call_node_num);
-                    }
-                    printf("INDIRECT,%d,%d,%d,%d,%d\n", call_node_num, 1, 12 + i, i_block, block_ptrs[i]);
-                }
-            }
+            printf("INDIRECT,%d,%d,%d,%d,%d\n", call_node_num, levels, offset + i, i_block, pointees[i]);
+        }
+        if (levels != 1)
+        {
+            indirect_block(levels - 1, pointees[i], call_node_num, offset + i);
         }
     }
-    free(block_ptrs);
+    free(pointees);
 }
 
 int main(int argc, char **argv)

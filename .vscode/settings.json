@@ -1,0 +1,7 @@
+{
+    "files.associations": {
+        "*.rmd": "markdown",
+        "random": "c",
+        "*.tcc": "c"
+    }
+}
