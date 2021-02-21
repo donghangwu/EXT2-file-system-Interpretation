@@ -203,7 +203,6 @@ void Inode_summary(unsigned int nodes_num)
 
 void directory_entries(unsigned long i_block, unsigned int parent)
 {
-    // struct ext2_dir_entry *entry = malloc(sizeof(struct ext2_dir_entry));
     struct ext2_dir_entry *entries = malloc(sizeof(struct ext2_dir_entry) * block_size);
     unsigned long dir_base = SUPPER_BLOCK_OFFSET + (i_block - 1) * block_size;
     unsigned int offset = 0;
@@ -233,15 +232,19 @@ void indirect_block(int levels, unsigned int i_block, unsigned int call_node_num
     {
         if (pointees[i] != 0)
         {
-            printf("INDIRECT,%d,%d,%d,%d,%d\n", call_node_num, levels, offset + i, i_block, pointees[i]);
+            printf("INDIRECT,%d,%d,%d,%d,%d\n", call_node_num, levels, offset, i_block, pointees[i]);
         }
         if (levels != 1)
         {
-            indirect_block(levels - 1, pointees[i], call_node_num, offset + i);
+            indirect_block(levels - 1, pointees[i], call_node_num, offset);
             if (levels == 3)     // the next block in level 3 points to the next 65536 blocks
                 offset += 65536; // this is from 256 * 256, second level -> 256 first -> 256 * 256 data blocks
             else if (levels == 2)
                 offset += 256;
+        }
+        else
+        {
+            offset++;
         }
     }
     free(pointees);
