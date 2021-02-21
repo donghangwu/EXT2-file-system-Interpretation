@@ -235,6 +235,10 @@ void indirect_block(int levels, unsigned int i_block, unsigned int call_node_num
         if (levels != 1)
         {
             indirect_block(levels - 1, pointees[i], call_node_num, offset + i);
+            if (levels == 3)     // the next block in level 3 points to the next 65536 blocks
+                offset += 65536; // this is from 256 * 256, second level -> 256 first -> 256 * 256 data blocks
+            else if (levels == 2)
+                offset += 256;
         }
     }
     free(pointees);
