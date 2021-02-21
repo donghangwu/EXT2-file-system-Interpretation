@@ -203,22 +203,25 @@ void Inode_summary(unsigned int nodes_num)
 
 void directory_entries(unsigned long i_block, unsigned int parent)
 {
-    struct ext2_dir_entry *entry = malloc(sizeof(struct ext2_dir_entry));
+    // struct ext2_dir_entry *entry = malloc(sizeof(struct ext2_dir_entry));
+    struct ext2_dir_entry *entries = malloc(sizeof(struct ext2_dir_entry) * block_size);
     unsigned long dir_base = SUPPER_BLOCK_OFFSET + (i_block - 1) * block_size;
     unsigned int offset = 0;
+    pread(image_fd, entries, sizeof(struct ext2_dir_entry) * block_size, dir_base);
     // From Dis 1B slide
+    struct ext2_dir_entry *entry = entries;
     while (offset < block_size)
     {
         char file_name[EXT2_NAME_LEN + 1];
-        pread(image_fd, entry, sizeof(struct ext2_dir_entry), dir_base + offset);
         if (entry->inode)
         {
             memcpy(file_name, entry->name, entry->name_len);
             printf("DIRENT,%d,%d,%d,%d,%d,'%s'\n", parent, offset, entry->inode, entry->rec_len, entry->name_len, entry->name);
         }
         offset += entry->rec_len;
+        entry = (void *)entry + entry->rec_len;
     }
-    free(entry);
+    free(entries);
 }
 
 void indirect_block(int levels, unsigned int i_block, unsigned int call_node_num, int offset)
