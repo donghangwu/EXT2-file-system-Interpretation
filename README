@@ -1,3 +1,8 @@
-Name: Donghang Wu, Tristan Que
-ID: 605346965
-Email: dwu20@g.ucla.edu, tristanq816@gmail.com
+NAME: Donghang Wu, Tristan Que
+ID: 605346965, 505379744
+EMAIL: dwu20@g.ucla.edu, tristanq816@gmail.com
+
+lab3a.c: C source file read the EXT2 file system image and Analyzes the provided
+         file system image and produces CSV summaries of what it finds
+Makefile: Makefile for this project
+README: a description of this project

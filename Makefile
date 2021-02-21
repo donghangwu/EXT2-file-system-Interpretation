@@ -1,6 +1,6 @@
-#Name: Donghang Wu Tristan Que
-#ID: 605346965
-#Email: dwu20@g.ucla.edu
+# NAME: Donghang Wu, Tristan Que
+# ID: 605346965, 505379744
+# EMAIL: dwu20@g.ucla.edu, tristanq816@gmail.com
 default:
 	gcc -Wall -Wextra -g -o lab3a lab3a.c 
 dist:
