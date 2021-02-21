@@ -222,7 +222,7 @@ void directory_entries(unsigned long i_block, unsigned int parent)
 void dfs_indirect_block(int levels, unsigned int i_block, unsigned int call_node_num, char file_type)
 {
     unsigned long block_base = SUPPER_BLOCK_OFFSET + (i_block - 1) * block_size;
-    uint32_t *block_ptrs = malloc(sizeof(block_size));
+    uint32_t *block_ptrs = malloc(block_size);
     pread(image_fd, block_ptrs, block_size, block_base);
 
     if (levels == 0)
